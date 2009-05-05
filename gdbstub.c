@@ -1105,14 +1105,10 @@ static int cpu_gdb_write_register(CPUState *env, uint8_t *mem_buf, int n)
 
 static int cpu_gdb_read_register(CPUState *env, uint8_t *mem_buf, int n)
 {
-    if (n < 8) {
-        if ((env->sr & (SR_MD | SR_RB)) == (SR_MD | SR_RB)) {
-            GET_REGL(env->gregs[n + 16]);
-        } else {
-            GET_REGL(env->gregs[n]);
-        }
+    if (n < 8 && (env->sr & (SR_MD | SR_RB)) == (SR_MD | SR_RB)) {
+        GET_REGL(env->gregs[n + 16]);
     } else if (n < 16) {
-        GET_REGL(env->gregs[n - 8]);
+        GET_REGL(env->gregs[n]);
     } else if (n >= 25 && n < 41) {
 	GET_REGL(env->fregs[(n - 25) + ((env->fpscr & FPSCR_FR) ? 16 : 0)]);
     } else if (n >= 43 && n < 51) {
@@ -1143,18 +1139,15 @@ static int cpu_gdb_write_register(CPUState *env, uint8_t *mem_buf, int n)
 
     tmp = ldl_p(mem_buf);
 
-    if (n < 8) {
-        if ((env->sr & (SR_MD | SR_RB)) == (SR_MD | SR_RB)) {
-            env->gregs[n + 16] = tmp;
-        } else {
-            env->gregs[n] = tmp;
-        }
+    if (n < 8 && (env->sr & (SR_MD | SR_RB)) == (SR_MD | SR_RB)) {
+        env->gregs[n + 16] = tmp;
 	return 4;
     } else if (n < 16) {
-        env->gregs[n - 8] = tmp;
+        env->gregs[n] = tmp;
 	return 4;
     } else if (n >= 25 && n < 41) {
 	env->fregs[(n - 25) + ((env->fpscr & FPSCR_FR) ? 16 : 0)] = tmp;
+	return 4;
     } else if (n >= 43 && n < 51) {
 	env->gregs[n - 43] = tmp;
 	return 4;
@@ -1163,21 +1156,20 @@ static int cpu_gdb_write_register(CPUState *env, uint8_t *mem_buf, int n)
 	return 4;
     }
     switch (n) {
-    case 16: env->pc = tmp;
-    case 17: env->pr = tmp;
-    case 18: env->gbr = tmp;
-    case 19: env->vbr = tmp;
-    case 20: env->mach = tmp;
-    case 21: env->macl = tmp;
-    case 22: env->sr = tmp;
-    case 23: env->fpul = tmp;
-    case 24: env->fpscr = tmp;
-    case 41: env->ssr = tmp;
-    case 42: env->spc = tmp;
-    default: return 0;
+    case 16: env->pc = tmp; return 4;
+    case 17: env->pr = tmp; return 4;
+    case 18: env->gbr = tmp; return 4;
+    case 19: env->vbr = tmp; return 4;
+    case 20: env->mach = tmp; return 4;
+    case 21: env->macl = tmp; return 4;
+    case 22: env->sr = tmp; return 4;
+    case 23: env->fpul = tmp; return 4;
+    case 24: env->fpscr = tmp; return 4;
+    case 41: env->ssr = tmp; return 4;
+    case 42: env->spc = tmp; return 4;
     }
 
-    return 4;
+    return 0;
 }
 #elif defined (TARGET_MICROBLAZE)
 
