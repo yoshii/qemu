@@ -53,12 +53,13 @@ const char *qemu_uname_release = CONFIG_UNAME_RELEASE;
    by remapping the process stack directly at the right place */
 unsigned long x86_stack_size = 512 * 1024;
 
+FILE *strace_file;
 void gemu_log(const char *fmt, ...)
 {
     va_list ap;
 
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    vfprintf(strace_file, fmt, ap);
     va_end(ap);
 }
 
@@ -2457,6 +2458,8 @@ int main(int argc, char **argv, char **envp)
 
     /* init debug */
     cpu_set_log_filename(DEBUG_LOGFILE);
+    strace_file = fopen("/tmp/qemu_strace","a");
+    setlinebuf(strace_file);
 
     if ((envlist = envlist_create()) == NULL) {
         (void) fprintf(stderr, "Unable to allocate envlist\n");
