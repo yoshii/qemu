@@ -5705,6 +5705,9 @@ abi_long do_syscall(void *cpu_env, int num, abi_long arg1,
         _mcleanup();
 #endif
         gdb_exit(cpu_env, arg1);
+#ifdef CONFIG_PROFILER
+        dump_exec_info(stderr, fprintf);
+#endif
         ret = get_errno(exit_group(arg1));
         break;
 #endif
