@@ -53,12 +53,14 @@ const char *qemu_uname_release = CONFIG_UNAME_RELEASE;
    by remapping the process stack directly at the right place */
 unsigned long x86_stack_size = 512 * 1024;
 
+FILE *strace_file = NULL;
 void gemu_log(const char *fmt, ...)
 {
     va_list ap;
-
+    if (!strace_file && (strace_file = fopen("/tmp/qemu.strace","a")))
+	setlinebuf(strace_file);
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    vfprintf(strace_file?strace_file:stderr, fmt, ap);
     va_end(ap);
 }
 
