@@ -307,13 +307,10 @@ static inline void gen_clr_t(void)
 static inline void gen_cmp(int cond, TCGv t0, TCGv t1)
 {
     int label1 = gen_new_label();
-    int label2 = gen_new_label();
+    tcg_gen_ori_i32(cpu_sr, cpu_sr, SR_T);
     tcg_gen_brcond_i32(cond, t1, t0, label1);
-    gen_clr_t();
-    tcg_gen_br(label2);
+    tcg_gen_xori_i32(cpu_sr, cpu_sr, SR_T);
     gen_set_label(label1);
-    gen_set_t();
-    gen_set_label(label2);
 }
 
 static inline void gen_cmp_imm(int cond, TCGv t0, int32_t imm)
