@@ -431,10 +431,10 @@ static inline void gen_store_fpr64 (TCGv_i64 t, int reg)
   }
 
 static void decode_opc(DisasContext * ctx);
-static void delay_slot(DisasContext *ctx, target_ulong pc)
+static void delay_slot(DisasContext *ctx, uint16_t opc)
 {
 	ctx->flags |= DELAY_SLOT;
-	ctx->opcode = lduw_code(ctx->pc = pc);
+	ctx->opcode = opc;
 	decode_opc(ctx);
 	ctx->flags &= ~DELAY_SLOT;
 }
@@ -487,7 +487,7 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_NOT_DELAY_SLOT
 	t0 = tcg_temp_local_new_i32();
 	tcg_gen_ld_i32(t0, cpu_env, offsetof(CPUState, pr));
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
         gen_jump(ctx, t0);
 	tcg_temp_free(t0);
 	ctx->bstate = BS_BRANCH;
@@ -512,10 +512,15 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_PRIVILEGED
 #if !defined(CONFIG_USER_ONLY)
 	CHECK_NOT_DELAY_SLOT
+	t0 = tcg_temp_local_new_i32();
+	tcg_gen_ld_i32(t0, cpu_env, offsetof(CPUState, spc));
+	ti = lduw_code(ctx->pc + 2);
 	tcg_gen_ld_i32(cpu_sr, cpu_env, offsetof(CPUState, ssr));
-	tcg_gen_ld_i32(cpu_delayed_pc, cpu_env, offsetof(CPUState, spc));
-	ctx->flags |= DELAY_SLOT;
-	ctx->delayed_pc = (uint32_t) - 1;
+	ctx->pc += 2;
+	delay_slot(ctx, ti);
+        gen_jump(ctx, t0);
+	tcg_temp_free(t0);
+	ctx->bstate = BS_BRANCH;
 #endif
 	return;
     case 0x0058:		/* sets */
@@ -588,7 +593,7 @@ static void decode_opc(DisasContext * ctx)
     case 0xa000:		/* bra disp */
 	CHECK_NOT_DELAY_SLOT
 	ti = ctx->pc + 4 + B11_0s * 2;
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
 	gen_jumpi(ctx, ti);
 	ctx->bstate = BS_BRANCH;
 	return;
@@ -598,7 +603,7 @@ static void decode_opc(DisasContext * ctx)
 	tcg_gen_st_i32(t0, cpu_env, offsetof(CPUState, pr));
 	tcg_temp_free_i32(t0);
 	ti = ctx->pc + 4 + B11_0s * 2;
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
         gen_jumpi(ctx, ti);
 	ctx->bstate = BS_BRANCH;
 	return;
@@ -1290,7 +1295,7 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_NOT_DELAY_SLOT
 	ti = ctx->pc + 4 + B7_0s*2;
 	tcg_gen_andi_i32(t0 = tcg_temp_local_new(), cpu_sr, SR_T);
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
 	gen_conditional_jump(ctx, 0, t0, ti);
 	ctx->bstate = BS_BRANCH;
 	return;
@@ -1304,7 +1309,7 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_NOT_DELAY_SLOT
 	ti = ctx->pc + 4 + B7_0s*2;
 	tcg_gen_andi_i32(t0 = tcg_temp_local_new(), cpu_sr, SR_T);
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
 	gen_conditional_jump(ctx, 1, t0, ti);
 	ctx->bstate = BS_BRANCH;
 	return;
@@ -1499,7 +1504,7 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_NOT_DELAY_SLOT
 	t0 = tcg_temp_local_new_i32();
 	tcg_gen_addi_i32(t0, REG(B11_8), ctx->pc + 4);
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
         gen_jump(ctx, t0);
 	tcg_temp_free(t0);
 	ctx->bstate = BS_BRANCH;
@@ -1509,7 +1514,7 @@ static void decode_opc(DisasContext * ctx)
 	t0 = tcg_const_local_i32(ctx->pc + 4);
 	tcg_gen_st_i32(t0, cpu_env, offsetof(CPUState, pr));
 	tcg_gen_addi_i32(t0, REG(B11_8), ctx->pc + 4);
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
         gen_jump(ctx, t0);
 	tcg_temp_free(t0);
 	ctx->bstate = BS_BRANCH;
@@ -1528,7 +1533,7 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_NOT_DELAY_SLOT
 	t0 = tcg_temp_local_new_i32();
 	tcg_gen_mov_i32(t0, REG(B11_8));
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
         gen_jump(ctx, t0);
 	tcg_temp_free(t0);
 	ctx->bstate = BS_BRANCH;
@@ -1538,7 +1543,7 @@ static void decode_opc(DisasContext * ctx)
 	t0 = tcg_const_local_i32(ctx->pc + 4);
 	tcg_gen_st_i32(t0, cpu_env, offsetof(CPUState, pr));
 	tcg_gen_mov_i32(t0, REG(B11_8));
-	delay_slot(ctx, ctx->pc + 2);
+	delay_slot(ctx, lduw_code(ctx->pc += 2));
         gen_jump(ctx, t0);
 	tcg_temp_free(t0);
 	ctx->bstate = BS_BRANCH;
