@@ -594,7 +594,7 @@ static void decode_opc(DisasContext * ctx)
 	return;
     case 0xb000:		/* bsr disp */
 	CHECK_NOT_DELAY_SLOT
-	t0 = tcg_const_i32(ctx->pc+ 2),
+	t0 = tcg_const_i32(ctx->pc+ 4),
 	tcg_gen_st_i32(t0, cpu_env, offsetof(CPUState, pr));
 	tcg_temp_free_i32(t0);
 	ti = ctx->pc + 4 + B11_0s * 2;
