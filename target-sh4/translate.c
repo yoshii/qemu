@@ -67,9 +67,13 @@ enum {
 
 /* global register indexes */
 static TCGv_ptr cpu_env;
+#if defined(CONFIG_USER_ONLY)
+static TCGv cpu_gregs[16];
+#else
 static TCGv cpu_gregs[24];
-static TCGv cpu_pc, cpu_sr, cpu_ssr, cpu_spc, cpu_gbr;
-static TCGv cpu_vbr, cpu_sgr, cpu_dbr, cpu_mach, cpu_macl;
+static TCGv cpu_vbr, cpu_sgr, cpu_dbr, cpu_ssr, cpu_spc;
+#endif
+static TCGv cpu_pc, cpu_sr, cpu_gbr, cpu_mach, cpu_macl;
 static TCGv cpu_pr, cpu_fpscr, cpu_fpul, cpu_ldst;
 static TCGv cpu_fregs[32];
 
@@ -81,12 +85,17 @@ static void sh4_translate_init(void)
 {
     int i;
     static int done_init = 0;
-    static const char * const gregnames[24] = {
+    static const char * const gregnames[] = {
+#if defined(CONFIG_USER_ONLY)
+        "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7",
+        "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15",
+#else
         "R0_BANK0", "R1_BANK0", "R2_BANK0", "R3_BANK0",
         "R4_BANK0", "R5_BANK0", "R6_BANK0", "R7_BANK0",
         "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15",
         "R0_BANK1", "R1_BANK1", "R2_BANK1", "R3_BANK1",
         "R4_BANK1", "R5_BANK1", "R6_BANK1", "R7_BANK1"
+#endif
     };
     static const char * const fregnames[32] = {
          "FPR0_BANK0",  "FPR1_BANK0",  "FPR2_BANK0",  "FPR3_BANK0",
@@ -104,7 +113,7 @@ static void sh4_translate_init(void)
 
     cpu_env = tcg_global_reg_new_ptr(TCG_AREG0, "env");
 
-    for (i = 0; i < 24; i++)
+    for (i = 0; i < ARRAY_SIZE(cpu_gregs); i++)
         cpu_gregs[i] = tcg_global_mem_new_i32(TCG_AREG0,
                                               offsetof(CPUState, gregs[i]),
                                               gregnames[i]);
@@ -113,20 +122,22 @@ static void sh4_translate_init(void)
                                     offsetof(CPUState, pc), "PC");
     cpu_sr = tcg_global_mem_new_i32(TCG_AREG0,
                                     offsetof(CPUState, sr), "SR");
+#if !defined(CONFIG_USER_ONLY)
     cpu_ssr = tcg_global_mem_new_i32(TCG_AREG0,
                                      offsetof(CPUState, ssr), "SSR");
     cpu_spc = tcg_global_mem_new_i32(TCG_AREG0,
                                      offsetof(CPUState, spc), "SPC");
-    cpu_gbr = tcg_global_mem_new_i32(TCG_AREG0,
-                                     offsetof(CPUState, gbr), "GBR");
     cpu_vbr = tcg_global_mem_new_i32(TCG_AREG0,
                                      offsetof(CPUState, vbr), "VBR");
     cpu_sgr = tcg_global_mem_new_i32(TCG_AREG0,
                                      offsetof(CPUState, sgr), "SGR");
     cpu_dbr = tcg_global_mem_new_i32(TCG_AREG0,
                                      offsetof(CPUState, dbr), "DBR");
+#endif
     cpu_mach = tcg_global_mem_new_i32(TCG_AREG0,
                                       offsetof(CPUState, mach), "MACH");
+    cpu_gbr = tcg_global_mem_new_i32(TCG_AREG0,
+                                     offsetof(CPUState, gbr), "GBR");
     cpu_macl = tcg_global_mem_new_i32(TCG_AREG0,
                                       offsetof(CPUState, macl), "MACL");
     cpu_pr = tcg_global_mem_new_i32(TCG_AREG0,
@@ -156,13 +167,15 @@ void cpu_dump_state(CPUState * env, FILE * f,
 		    int flags)
 {
     int i;
-    cpu_fprintf(f, "pc=0x%08x sr=0x%08x pr=0x%08x fpscr=0x%08x\n",
-		env->pc, env->sr, env->pr, env->fpscr);
-    cpu_fprintf(f, "spc=0x%08x ssr=0x%08x gbr=0x%08x vbr=0x%08x\n",
-		env->spc, env->ssr, env->gbr, env->vbr);
-    cpu_fprintf(f, "sgr=0x%08x dbr=0x%08x fpul=0x%08x\n",
-		env->sgr, env->dbr, env->fpul);
-    for (i = 0; i < 24; i += 4) {
+    cpu_fprintf(f, "pc=%08x sr=%08x pr=%08x ",
+               env->pc, env->sr, env->pr);
+    cpu_fprintf(f, "gbr=%08x fpul=%08x fpscr=%08x\n",
+               env->gbr, env->fpul, env->fpscr);
+#if !defined(CONFIG_USER_ONLY)
+    cpu_fprintf(f, "spc=0x%08x ssr=0x%08x vbr=0x%08x sgr=0x%08x dbr=0x%08x\n",
+              env->spc, env->ssr, env->gbr, env->vbr, env->sgr, env->dbr);
+#endif
+    for (i = 0; i < ARRAY_SIZE(cpu_gregs); i += 4) {
 	cpu_fprintf(f, "r%d=0x%08x r%d=0x%08x r%d=0x%08x r%d=0x%08x\n",
 		    i, env->gregs[i], i + 1, env->gregs[i + 1],
 		    i + 2, env->gregs[i + 2], i + 3, env->gregs[i + 3]);
@@ -404,9 +417,12 @@ static inline void gen_store_fpr64 (TCGv_i64 t, int reg)
 #define B11_8 ((ctx->opcode >> 8) & 0xf)
 #define B15_12 ((ctx->opcode >> 12) & 0xf)
 
+#if defined(CONFIG_USER_ONLY)
+#define REG(x) (cpu_gregs[x])
+#else
 #define REG(x) ((x) < 8 && (ctx->sr & (SR_MD | SR_RB)) == (SR_MD | SR_RB) ? \
 		(cpu_gregs[x + 16]) : (cpu_gregs[x]))
-
+#endif
 #define ALTREG(x) ((x) < 8 && (ctx->sr & (SR_MD | SR_RB)) != (SR_MD | SR_RB) \
 		? (cpu_gregs[x + 16]) : (cpu_gregs[x]))
 
@@ -519,10 +535,13 @@ static void decode_opc(DisasContext * ctx)
 	return;
     case 0x0038:		/* ldtlb */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	gen_helper_ldtlb();
+#endif
 	return;
     case 0x002b:		/* rte */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	CHECK_NOT_DELAY_SLOT
 	t0 = tcg_temp_local_new_i32();
 	tcg_gen_mov_i32(t0, cpu_spc);
@@ -533,6 +552,7 @@ static void decode_opc(DisasContext * ctx)
         gen_jump(ctx, t0);
 	tcg_temp_free(t0);
 	ctx->bstate = BS_BRANCH;
+#endif
 	return;
     case 0x0058:		/* sets */
 	tcg_gen_ori_i32(cpu_sr, cpu_sr, SR_S);
@@ -552,7 +572,9 @@ static void decode_opc(DisasContext * ctx)
 	return;
     case 0x001b:		/* sleep */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	gen_helper_sleep(tcg_const_i32(ctx->pc + 2));
+#endif
 	return;
     }
 
@@ -1398,19 +1420,26 @@ static void decode_opc(DisasContext * ctx)
     switch (ctx->opcode & 0xf08f) {
     case 0x408e:		/* ldc Rm,Rn_BANK */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	tcg_gen_mov_i32(ALTREG(B6_4), REG(B11_8));
+#endif
 	return;
     case 0x4087:		/* ldc.l @Rm+,Rn_BANK */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	tcg_gen_qemu_ld32s(ALTREG(B6_4), REG(B11_8), ctx->memidx);
 	tcg_gen_addi_i32(REG(B11_8), REG(B11_8), 4);
+#endif
 	return;
     case 0x0082:		/* stc Rm_BANK,Rn */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	tcg_gen_mov_i32(REG(B11_8), ALTREG(B6_4));
+#endif
 	return;
     case 0x4083:		/* stc.l Rm_BANK,@-Rn */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	{
 	    TCGv addr = tcg_temp_new();
 	    tcg_gen_subi_i32(addr, REG(B11_8), 4);
@@ -1418,6 +1447,7 @@ static void decode_opc(DisasContext * ctx)
 	    tcg_gen_mov_i32(REG(B11_8), addr);
 	    tcg_temp_free(addr);
 	}
+#endif
 	return;
     }
 
@@ -1472,11 +1502,14 @@ static void decode_opc(DisasContext * ctx)
 	return;
     case 0x400e:		/* ldc Rm,SR */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	tcg_gen_andi_i32(cpu_sr, REG(B11_8), 0x700083f3);
 	ctx->bstate = BS_STOP;
+#endif
 	return;
     case 0x4007:		/* ldc.l @Rm+,SR */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	{
 	    TCGv val = tcg_temp_new();
 	    tcg_gen_qemu_ld32s(val, REG(B11_8), ctx->memidx);
@@ -1485,13 +1518,17 @@ static void decode_opc(DisasContext * ctx)
 	    tcg_gen_addi_i32(REG(B11_8), REG(B11_8), 4);
 	    ctx->bstate = BS_STOP;
 	}
+#endif
 	return;
     case 0x0002:		/* stc SR,Rn */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	tcg_gen_mov_i32(REG(B11_8), cpu_sr);
+#endif
 	return;
     case 0x4003:		/* stc SR,@-Rn */
 	CHECK_PRIVILEGED
+#if !defined(CONFIG_USER_ONLY)
 	{
 	    TCGv addr = tcg_temp_new();
 	    tcg_gen_subi_i32(addr, REG(B11_8), 4);
@@ -1499,6 +1536,7 @@ static void decode_opc(DisasContext * ctx)
 	    tcg_gen_mov_i32(REG(B11_8), addr);
 	    tcg_temp_free(addr);
 	}
+#endif
 	return;
 #define LDST(reg,ldnum,ldpnum,stnum,stpnum,prechk)		\
   case ldnum:							\
@@ -1525,10 +1563,12 @@ static void decode_opc(DisasContext * ctx)
     }								\
     return;
 	LDST(gbr,  0x401e, 0x4017, 0x0012, 0x4013, {})
+#if !defined(CONFIG_USER_ONLY)
 	LDST(vbr,  0x402e, 0x4027, 0x0022, 0x4023, CHECK_PRIVILEGED)
 	LDST(ssr,  0x403e, 0x4037, 0x0032, 0x4033, CHECK_PRIVILEGED)
 	LDST(spc,  0x404e, 0x4047, 0x0042, 0x4043, CHECK_PRIVILEGED)
 	LDST(dbr,  0x40fa, 0x40f6, 0x00fa, 0x40f2, CHECK_PRIVILEGED)
+#endif
 	LDST(mach, 0x400a, 0x4006, 0x000a, 0x4002, {})
 	LDST(macl, 0x401a, 0x4016, 0x001a, 0x4012, {})
 	LDST(pr,   0x402a, 0x4026, 0x002a, 0x4022, {})
@@ -1866,7 +1906,9 @@ gen_intermediate_code_internal(CPUState * env, TranslationBlock * tb,
     ctx.bstate = BS_NONE;
     ctx.sr = env->sr;
     ctx.fpscr = env->fpscr;
+#if !defined(CONFIG_USER_ONLY)
     ctx.memidx = (env->sr & SR_MD) == 0 ? 1 : 0;
+#endif
     ctx.tb = tb;
     ctx.singlestep_enabled = env->singlestep_enabled;
     ctx.features = env->features;
