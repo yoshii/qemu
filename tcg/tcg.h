@@ -259,6 +259,7 @@ typedef struct TCGTemp {
     /* index of next free temp of same base type, -1 if end */
     int next_free_temp;
     const char *name;
+    int qpos; // queue management
 } TCGTemp;
 
 typedef struct TCGHelperInfo {
