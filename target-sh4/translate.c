@@ -2040,7 +2040,7 @@ gen_intermediate_code_internal(CPUState * env, TranslationBlock * tb,
     ctx.bstate = BS_NONE;
     ctx.sr = env->sr;
     ctx.fpscr = env->fpscr;
-    ctx.memidx = (env->sr & SR_MD) ? 1 : 0;
+    ctx.memidx = (env->sr & SR_MD) == 0 ? 1 : 0;
     ctx.tb = tb;
     ctx.singlestep_enabled = env->singlestep_enabled;
     ctx.features = env->features;
