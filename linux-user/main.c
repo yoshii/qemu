@@ -2450,6 +2450,7 @@ int main(int argc, char **argv, char **envp)
     const char *argv0 = NULL;
     int i;
     int ret;
+    int log_mask = 0;
 
     if (argc <= 1)
         usage();
@@ -2499,7 +2500,7 @@ int main(int argc, char **argv, char **envp)
                 }
                 exit(1);
             }
-            cpu_set_log(mask);
+            log_mask = mask;
         } else if (!strcmp(r, "E")) {
             r = argv[optind++];
             if (envlist_setenv(envlist, r) != 0)
@@ -2566,6 +2567,23 @@ int main(int argc, char **argv, char **envp)
     }
     if (optind >= argc)
         usage();
+    if (getenv("QEMU_LOG")) {
+	int mask;
+        const CPULogItem *item;
+        mask = cpu_str_to_log_mask(getenv("QEMU_LOG"));
+        if (!mask) {
+            printf("Log items (comma separated):\n");
+            for(item = cpu_log_items; item->mask != 0; item++) {
+                printf("%-10s %s\n", item->name, item->help);
+            }
+            exit(1);
+        }
+        log_mask |= mask;
+    }
+    if (log_mask) {
+        cpu_set_log(log_mask);
+    }
+
     filename = argv[optind];
     exec_path = argv[optind];
 
