@@ -102,6 +102,7 @@ void do_interrupt(CPUState * env)
     }
 
     if (do_irq) {
+    if (env->flags & (DELAY_SLOT | DELAY_SLOT_CONDITIONAL)) return;
         irq_vector = sh_intc_get_pending_vector(env->intc_handle,
 						(env->sr >> 4) & 0xf);
         if (irq_vector == -1) {
