@@ -1537,6 +1537,7 @@ print_insn_sh (bfd_vma memaddr, struct disassemble_info *info)
       break;
     case bfd_mach_sh4:
       target_arch = arch_sh4;
+      target_arch = arch_sh4a;
       break;
     case bfd_mach_sh5:
 #ifdef INCLUDE_SHMEDIA
