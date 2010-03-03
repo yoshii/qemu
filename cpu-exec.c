@@ -46,8 +46,8 @@
 
 int tb_invalidated_flag;
 
-//#define CONFIG_DEBUG_EXEC
-//#define DEBUG_SIGNAL
+#define CONFIG_DEBUG_EXEC
+#define DEBUG_SIGNAL
 
 int qemu_cpu_has_work(CPUState *env)
 {
@@ -548,27 +548,17 @@ int cpu_exec(CPUState *env1)
                     env->eflags = env->eflags | helper_cc_compute_all(CC_OP) | (DF & DF_MASK);
                     log_cpu_state(env, X86_DUMP_CCOP);
                     env->eflags &= ~(DF_MASK | CC_O | CC_S | CC_Z | CC_A | CC_P | CC_C);
-#elif defined(TARGET_ARM)
+#elif defined(TARGET_ARM) || defined(TARGET_SPARC) || defined(TARGET_PPC) || \
+      defined(TARGET_MICROBLAZE) || defined(TARGET_MIPS) || \
+      defined(TARGET_ALPHA) || defined(TARGET_CRIS)
                     log_cpu_state(env, 0);
-#elif defined(TARGET_SPARC)
-                    log_cpu_state(env, 0);
-#elif defined(TARGET_PPC)
-                    log_cpu_state(env, 0);
+#elif defined(TARGET_SH4)
+		    cpu_dump_state_diff(env, logfile, fprintf, 0);
 #elif defined(TARGET_M68K)
                     cpu_m68k_flush_flags(env, env->cc_op);
                     env->cc_op = CC_OP_FLAGS;
                     env->sr = (env->sr & 0xffe0)
                               | env->cc_dest | (env->cc_x << 4);
-                    log_cpu_state(env, 0);
-#elif defined(TARGET_MICROBLAZE)
-                    log_cpu_state(env, 0);
-#elif defined(TARGET_MIPS)
-                    log_cpu_state(env, 0);
-#elif defined(TARGET_SH4)
-		    log_cpu_state(env, 0);
-#elif defined(TARGET_ALPHA)
-                    log_cpu_state(env, 0);
-#elif defined(TARGET_CRIS)
                     log_cpu_state(env, 0);
 #else
 #error unsupported target CPU
@@ -586,7 +576,7 @@ int cpu_exec(CPUState *env1)
                     next_tb = 0;
                     tb_invalidated_flag = 0;
                 }
-#ifdef CONFIG_DEBUG_EXEC
+#ifdef CONFIG_DEBUG_EXEC___
                 qemu_log_mask(CPU_LOG_EXEC, "Trace 0x%08lx [" TARGET_FMT_lx "] %s\n",
                              (long)tb->tc_ptr, tb->pc,
                              lookup_symbol(tb->pc));
