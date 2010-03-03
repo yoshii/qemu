@@ -205,7 +205,7 @@ static const sh4_def_t *cpu_sh4_find_by_name(const char *name)
     int i;
 
     if (strcasecmp(name, "any") == 0)
-	return &sh4_defs[0];
+	return &sh4_defs[2];
 
     for (i = 0; i < ARRAY_SIZE(sh4_defs); i++)
 	if (strcasecmp(name, sh4_defs[i].name) == 0)
