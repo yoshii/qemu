@@ -245,7 +245,7 @@ static void r2d_init(ram_addr_t ram_size,
       stl_phys(SH7750_BCR1, 1<<3); /* cs3 SDRAM */
       stw_phys(SH7750_BCR2, 3<<(3*2)); /* cs3 32bit */
 
-      if (kernel_cmdline) {
+      if (*kernel_cmdline) {
           kernel_size = load_image_targphys(kernel_filename,
 				   SDRAM_BASE + LINUX_LOAD_OFFSET,
 				   SDRAM_SIZE - LINUX_LOAD_OFFSET);
