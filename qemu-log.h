@@ -51,6 +51,7 @@ extern int loglevel;
 /* Special cases: */
 
 /* cpu_dump_state() logging functions: */
+extern void cpu_dump_state_diff(CPUState * env, FILE * f, int (*cpu_fprintf) (FILE * f, const char *fmt, ...), int flags);
 #define log_cpu_state(env, f) cpu_dump_state((env), logfile, fprintf, (f));
 #define log_cpu_state_mask(b, env, f) do {           \
       if (loglevel & (b)) log_cpu_state((env), (f)); \

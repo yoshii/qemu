@@ -24,7 +24,7 @@
 
 #define DEBUG_DISAS
 #define SH4_DEBUG_DISAS
-//#define SH4_SINGLE_STEP
+#define SH4_SINGLE_STEP
 
 #include "cpu.h"
 #include "exec-all.h"
@@ -160,28 +160,60 @@ static void sh4_translate_init(void)
     done_init = 1;
 }
 
+void cpu_dump_state_diff(CPUState * env, FILE * f,
+			 int (*cpu_fprintf) (FILE * f, const char *fmt, ...),
+			 int flags)
+{
+    static CPUState oldenv;
+    int i;
+
+    cpu_fprintf(f, "%08x ",env->pc);
+    if (env->pc != oldenv.pc + 2) {
+        cpu_fprintf(f, "pc=%08x ",env->pc);
+    }
+    oldenv.pc = env->pc;
+    if (env->pr != oldenv.pr) {
+        cpu_fprintf(f, "pr=%08x ",env->pr);
+        oldenv.pr = env->pr;
+    }
+    if (env->sr != oldenv.sr) {
+        cpu_fprintf(f, "sr=%08x ",env->sr);
+        oldenv.sr = env->sr;
+    }
+    for (i = 0; i < 16; i ++) {
+        if (env->gregs[i] != oldenv.gregs[i]) {
+            cpu_fprintf(f, "r%d=%08x ",i, env->gregs[i]);
+            oldenv.gregs[i] = env->gregs[i];
+        }
+    }
+    fprintf(f,"\n");
+}
+
 void cpu_dump_state(CPUState * env, FILE * f,
 		    int (*cpu_fprintf) (FILE * f, const char *fmt, ...),
 		    int flags)
 {
     int i;
     cpu_fprintf(f, "pc=%08x sr=%08x pr=%08x ",
-               env->pc, env->sr, env->pr);
+                env->pc, env->sr, env->pr);
     cpu_fprintf(f, "gbr=%08x fpul=%08x fpscr=%08x\n",
-               env->gbr, env->fpul, env->fpscr);
+                env->gbr, env->fpul, env->fpscr);
 #if !defined(CONFIG_USER_ONLY)
     cpu_fprintf(f, "spc=0x%08x ssr=0x%08x vbr=0x%08x sgr=0x%08x dbr=0x%08x\n",
-              env->spc, env->ssr, env->gbr, env->vbr, env->sgr, env->dbr);
+                env->spc, env->ssr, env->gbr, env->vbr, env->sgr, env->dbr);
 #endif
-    for (i = 0; i < ARRAY_SIZE(cpu_gregs); i += 4) {
-	cpu_fprintf(f, "r%d=0x%08x r%d=0x%08x r%d=0x%08x r%d=0x%08x\n",
-		    i, env->gregs[i], i + 1, env->gregs[i + 1],
-		    i + 2, env->gregs[i + 2], i + 3, env->gregs[i + 3]);
+    for (i = 0; i < ARRAY_SIZE(cpu_gregs); i += 8) {
+        cpu_fprintf(f, "r%d-r%d%s %08x %08x %08x %08x %08x %08x %08x %08x\n",
+                    i, i+7, i<10?i<3?"  ":" ":"",
+                    env->gregs[i+0], env->gregs[i+1],
+                    env->gregs[i+2], env->gregs[i+3],
+                    env->gregs[i+4], env->gregs[i+5],
+                    env->gregs[i+6], env->gregs[i+7]);
     }
     if (env->flags & DELAY_SLOT) {
-	cpu_fprintf(f, "in delay slot\n");
+        cpu_fprintf(f, "in delay slot\n");
     } else if (env->flags & DELAY_SLOT_CONDITIONAL) {
-	cpu_fprintf(f, "in conditional delay slot\n");
+        cpu_fprintf(f, "in conditional delay slot\n");
     }
 }
 
@@ -300,7 +332,7 @@ static void gen_goto_tb(DisasContext * ctx, int n, target_ulong dest)
     tb = ctx->tb;
 
     if ((tb->pc & TARGET_PAGE_MASK) == (dest & TARGET_PAGE_MASK) &&
-	!ctx->singlestep_enabled) {
+	!ctx->singlestep_enabled && !singlestep) {
 	/* Use a direct jump if in same page and singlestep not enabled */
         tcg_gen_goto_tb(n);
         tcg_gen_movi_i32(cpu_pc, dest);

@@ -46,7 +46,7 @@
 
 int tb_invalidated_flag;
 
-//#define CONFIG_DEBUG_EXEC
+#define CONFIG_DEBUG_EXEC
 //#define DEBUG_SIGNAL
 
 int qemu_cpu_has_work(CPUState *env)
@@ -565,7 +565,7 @@ int cpu_exec(CPUState *env1)
 #elif defined(TARGET_MIPS)
                     log_cpu_state(env, 0);
 #elif defined(TARGET_SH4)
-		    log_cpu_state(env, 0);
+		    cpu_dump_state_diff(env, logfile, fprintf, 0);
 #elif defined(TARGET_ALPHA)
                     log_cpu_state(env, 0);
 #elif defined(TARGET_CRIS)
@@ -586,7 +586,7 @@ int cpu_exec(CPUState *env1)
                     next_tb = 0;
                     tb_invalidated_flag = 0;
                 }
-#ifdef CONFIG_DEBUG_EXEC
+#ifdef CONFIG_DEBUG_EXEC___
                 qemu_log_mask(CPU_LOG_EXEC, "Trace 0x%08lx [" TARGET_FMT_lx "] %s\n",
                              (long)tb->tc_ptr, tb->pc,
                              lookup_symbol(tb->pc));
