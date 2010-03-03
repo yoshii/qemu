@@ -309,7 +309,7 @@ static void r2d_init(ram_addr_t ram_size,
         boot_params.initrd_size = initrd_size;
     }
 
-    if (kernel_cmdline) {
+    if (*kernel_cmdline) {
         strncpy(boot_params.kernel_cmdline, kernel_cmdline,
                 sizeof(boot_params.kernel_cmdline));
     }
