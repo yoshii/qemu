@@ -1,5 +1,6 @@
 /* Native implementation of soft float functions. Only a single status
    context is supported */
+#include "config-host.h"
 #include "softfloat.h"
 #include <math.h>
 #if defined(CONFIG_SOLARIS)
