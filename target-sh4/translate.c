@@ -351,26 +351,18 @@ static inline void gen_clr_t(void)
 
 static inline void gen_cmp(int cond, TCGv t0, TCGv t1)
 {
-    int label1 = gen_new_label();
-    int label2 = gen_new_label();
-    tcg_gen_brcond_i32(cond, t1, t0, label1);
-    gen_clr_t();
-    tcg_gen_br(label2);
-    gen_set_label(label1);
-    gen_set_t();
-    gen_set_label(label2);
+    TCGv t = tcg_temp_new();
+    tcg_gen_setcond_i32(cond, t, t1, t0);
+    tcg_gen_andi_i32(cpu_sr, cpu_sr, ~SR_T);
+    tcg_gen_or_i32(cpu_sr, cpu_sr, t);
 }
 
 static inline void gen_cmp_imm(int cond, TCGv t0, int32_t imm)
 {
-    int label1 = gen_new_label();
-    int label2 = gen_new_label();
-    tcg_gen_brcondi_i32(cond, t0, imm, label1);
-    gen_clr_t();
-    tcg_gen_br(label2);
-    gen_set_label(label1);
-    gen_set_t();
-    gen_set_label(label2);
+    TCGv t = tcg_temp_new();
+    tcg_gen_setcondi_i32(cond, t, t0, imm);
+    tcg_gen_andi_i32(cpu_sr, cpu_sr, ~SR_T);
+    tcg_gen_or_i32(cpu_sr, cpu_sr, t);
 }
 
 static inline void gen_copy_bit_i32(TCGv t0, int p0, TCGv t1, int p1)
