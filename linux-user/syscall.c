@@ -510,22 +510,24 @@ static int sys_inotify_rm_watch(int fd, int32_t wd)
   return (inotify_rm_watch(fd, wd));
 }
 #endif
+#else
+/* Userspace can usually survive runtime without inotify */
+#undef TARGET_NR_inotify_init
+#undef TARGET_NR_inotify_add_watch
+#undef TARGET_NR_inotify_rm_watch
+#endif /* CONFIG_INOTIFY  */
+
 #ifdef CONFIG_INOTIFY1
+#include <sys/inotify.h>
 #if defined(TARGET_NR_inotify_init1) && defined(__NR_inotify_init1)
 static int sys_inotify_init1(int flags)
 {
   return (inotify_init1(flags));
 }
 #endif
-#endif
 #else
-/* Userspace can usually survive runtime without inotify */
-#undef TARGET_NR_inotify_init
 #undef TARGET_NR_inotify_init1
-#undef TARGET_NR_inotify_add_watch
-#undef TARGET_NR_inotify_rm_watch
-#endif /* CONFIG_INOTIFY  */
-
+#endif /* CONFIG_INOTIFY1  */
 
 extern int personality(int);
 extern int flock(int, int);
