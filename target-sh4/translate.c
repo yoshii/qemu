@@ -170,10 +170,12 @@ void cpu_dump_state_diff(CPUState * env, FILE * f,
     int i;
 
     cpu_fprintf(f, "%08x ",env->pc);
+/*
     if (env->pc != oldenv.pc + 2) {
         cpu_fprintf(f, "pc=%08x ",env->pc);
     }
     oldenv.pc = env->pc;
+*/
     if (env->pr != oldenv.pr) {
         cpu_fprintf(f, "pr=%08x ",env->pr);
         oldenv.pr = env->pr;

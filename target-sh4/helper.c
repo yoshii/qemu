@@ -78,18 +78,14 @@ int cpu_sh4_is_cached(CPUSH4State * env, target_ulong addr)
 
 void do_interrupt(CPUState * env)
 {
-    int do_irq = env->interrupt_request & CPU_INTERRUPT_HARD;
-    int do_exp, irq_vector = env->exception_index;
+    int do_irq, do_exp;
+    int irq_vector = env->exception_index;
 
     /* prioritize exceptions over interrupts */
-
     do_exp = env->exception_index != -1;
-    do_irq = do_irq && (env->exception_index == -1);
+    do_irq = !do_exp && (env->interrupt_request & CPU_INTERRUPT_HARD);
 
     if (env->sr & SR_BL) {
-        if (do_exp && env->exception_index != 0x1e0) {
-            env->exception_index = 0x000; /* masked exception -> reset */
-        }
         if (do_irq && !env->intr_at_halt) {
             return; /* masked */
         }
@@ -97,6 +93,8 @@ void do_interrupt(CPUState * env)
     }
 
     if (do_irq) {
+        if (env->flags & (DELAY_SLOT | DELAY_SLOT_CONDITIONAL))
+	    return;
         irq_vector = sh_intc_get_pending_vector(env->intc_handle,
 						(env->sr >> 4) & 0xf);
         if (irq_vector == -1) {
@@ -171,6 +169,9 @@ void do_interrupt(CPUState * env)
 
     if (do_exp) {
         env->expevt = env->exception_index;
+        if ((env->ssr & SR_BL) && env->exception_index != 0x1e0) {
+            env->exception_index = 0x000; /* masked exception -> reset */
+        }
         switch (env->exception_index) {
         case 0x000:
         case 0x020:
