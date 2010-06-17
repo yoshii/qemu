@@ -168,6 +168,8 @@ int main(int argc, char **argv)
 
 #define MAX_VIRTIO_CONSOLES 1
 
+extern void cpu_set_log_filename(const char *filename);
+
 static const char *data_dir;
 const char *bios_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
@@ -2616,6 +2618,9 @@ int main(int argc, char **argv, char **envp)
                     fclose(fp);
                     break;
                 }
+            case QEMU_OPTION_logfile:
+                cpu_set_log_filename(optarg);
+                break;
             default:
                 os_parse_cmd_args(popt->index, optarg);
             }

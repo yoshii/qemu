@@ -2224,6 +2224,16 @@ Normally QEMU loads a configuration file from @var{sysconfdir}/qemu.conf and
 option will prevent QEMU from loading these configuration files at startup.
 ETEXI
 
+DEF("logfile", HAS_ARG, QEMU_OPTION_logfile,
+    "-logfile <filename>\n"
+    "                set log file name\n",
+    QEMU_ARCH_ALL)
+STEXI
+@item -logfile
+@findex -logfile
+Set log file name
+ETEXI
+
 HXCOMM This is the last statement. Insert new options before this line!
 STEXI
 @end table
