@@ -862,7 +862,7 @@ struct exec
 #define INTERPRETER_AOUT 1
 #define INTERPRETER_ELF 2
 
-#define DLINFO_ITEMS 12
+#define DLINFO_ITEMS 14
 
 static inline void memcpy_fromfs(void * to, const void * from, unsigned long n)
 {
@@ -1099,6 +1099,7 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
         abi_ulong sp;
         int size;
         abi_ulong u_platform;
+	abi_ulong u_random;
         const char *k_platform;
         const int n = sizeof(elf_addr_t);
 
@@ -1125,8 +1126,11 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
         size += envc + argc + 2;
 	size += (!ibcs ? 3 : 1);	/* argc itself */
         size *= n;
+	size += 16;			/* random vector in byte */
         if (size & 15)
             sp -= 16 - (size & 15);
+	sp -= 16;
+	u_random = sp;
 
         /* This is correct because Linux defines
          * elf_addr_t as Elf32_Off / Elf64_Off
@@ -1152,6 +1156,7 @@ static abi_ulong create_elf_tables(abi_ulong p, int argc, int envc,
         NEW_AUX_ENT(AT_EGID, (abi_ulong) getegid());
         NEW_AUX_ENT(AT_HWCAP, (abi_ulong) ELF_HWCAP);
         NEW_AUX_ENT(AT_CLKTCK, (abi_ulong) sysconf(_SC_CLK_TCK));
+        NEW_AUX_ENT(AT_RANDOM, u_random);
         if (k_platform)
             NEW_AUX_ENT(AT_PLATFORM, u_platform);
 #ifdef ARCH_DLINFO

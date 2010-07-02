@@ -207,6 +207,7 @@ typedef int64_t  Elf64_Sxword;
 #define AT_PLATFORM 15  /* string identifying CPU for optimizations */
 #define AT_HWCAP  16    /* arch dependent hints at CPU capabilities */
 #define AT_CLKTCK 17	/* frequency at which times() increments */
+#define AT_RANDOM 25    /* address of 16 random bytes */
 
 typedef struct dynamic{
   Elf32_Sword d_tag;
