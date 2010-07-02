@@ -14,6 +14,7 @@
 #include "pci.h"
 #include "usb-ohci.h"
 #include "net.h"
+#include "ide.h"
 #include "sysemu.h"
 #include "boards.h"
 #include "bitbang_i2c.h"
@@ -143,6 +144,7 @@ static void realview_init(ram_addr_t ram_size,
     PCIBus *pci_bus;
     NICInfo *nd;
     i2c_bus *i2c;
+    DriveInfo *ide,*ide2;
     int n;
     int done_nic = 0;
     qemu_irq cpu_irq[4];
@@ -293,6 +295,10 @@ static void realview_init(ram_addr_t ram_size,
     dev = sysbus_create_simple("realview_i2c", 0x10002000, NULL);
     i2c = (i2c_bus *)qdev_get_child_bus(dev, "i2c");
     i2c_create_slave(i2c, "ds1338", 0x68);
+
+    ide = drive_get(IF_IDE, 0, 0);
+    ide2 = drive_get(IF_IDE, 0, 1);
+    mmio_ide_init(0x18000000, 0x18000100, 0, 1, ide, ide2);
 
     /* Memory map for RealView Emulation Baseboard:  */
     /* 0x10000000 System registers.  */
