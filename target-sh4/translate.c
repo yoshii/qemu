@@ -1049,10 +1049,10 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_FPU_ENABLED
 	if (ctx->fpscr & FPSCR_SZ) {
 	    TCGv addr_hi = tcg_temp_new();
-	    int fr = XREG(B7_4);
+	    int fr = XREG(B7_4) | (ctx->fpscr & FPSCR_PR ? 1:0);
 	    tcg_gen_addi_i32(addr_hi, REG(B11_8), 4);
 	    tcg_gen_qemu_st32(cpu_fregs[fr  ], REG(B11_8), ctx->memidx);
-	    tcg_gen_qemu_st32(cpu_fregs[fr+1], addr_hi,	   ctx->memidx);
+	    tcg_gen_qemu_st32(cpu_fregs[fr^1], addr_hi,	   ctx->memidx);
 	    tcg_temp_free(addr_hi);
 	} else {
 	    tcg_gen_qemu_st32(cpu_fregs[FREG(B7_4)], REG(B11_8), ctx->memidx);
@@ -1062,10 +1062,10 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_FPU_ENABLED
 	if (ctx->fpscr & FPSCR_SZ) {
 	    TCGv addr_hi = tcg_temp_new();
-	    int fr = XREG(B11_8);
+	    int fr = XREG(B11_8) | (ctx->fpscr & FPSCR_PR ? 1:0);
 	    tcg_gen_addi_i32(addr_hi, REG(B7_4), 4);
 	    tcg_gen_qemu_ld32u(cpu_fregs[fr  ], REG(B7_4), ctx->memidx);
-	    tcg_gen_qemu_ld32u(cpu_fregs[fr+1], addr_hi,   ctx->memidx);
+	    tcg_gen_qemu_ld32u(cpu_fregs[fr^1], addr_hi,   ctx->memidx);
 	    tcg_temp_free(addr_hi);
 	} else {
 	    tcg_gen_qemu_ld32u(cpu_fregs[FREG(B11_8)], REG(B7_4), ctx->memidx);
@@ -1075,10 +1075,10 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_FPU_ENABLED
 	if (ctx->fpscr & FPSCR_SZ) {
 	    TCGv addr_hi = tcg_temp_new();
-	    int fr = XREG(B11_8);
+	    int fr = XREG(B11_8) | (ctx->fpscr & FPSCR_PR ? 1:0);
 	    tcg_gen_addi_i32(addr_hi, REG(B7_4), 4);
 	    tcg_gen_qemu_ld32u(cpu_fregs[fr  ], REG(B7_4), ctx->memidx);
-	    tcg_gen_qemu_ld32u(cpu_fregs[fr+1], addr_hi,   ctx->memidx);
+	    tcg_gen_qemu_ld32u(cpu_fregs[fr^1], addr_hi,   ctx->memidx);
 	    tcg_gen_addi_i32(REG(B7_4), REG(B7_4), 8);
 	    tcg_temp_free(addr_hi);
 	} else {
@@ -1090,9 +1090,9 @@ static void decode_opc(DisasContext * ctx)
 	CHECK_FPU_ENABLED
 	if (ctx->fpscr & FPSCR_SZ) {
 	    TCGv addr = tcg_temp_new_i32();
-	    int fr = XREG(B7_4);
+	    int fr = XREG(B7_4) | (ctx->fpscr & FPSCR_PR ? 1:0);
 	    tcg_gen_subi_i32(addr, REG(B11_8), 4);
-	    tcg_gen_qemu_st32(cpu_fregs[fr+1], addr, ctx->memidx);
+	    tcg_gen_qemu_st32(cpu_fregs[fr^1], addr, ctx->memidx);
 	    tcg_gen_subi_i32(addr, addr, 4);
 	    tcg_gen_qemu_st32(cpu_fregs[fr  ], addr, ctx->memidx);
 	    tcg_gen_mov_i32(REG(B11_8), addr);
@@ -1112,10 +1112,10 @@ static void decode_opc(DisasContext * ctx)
 	    TCGv addr = tcg_temp_new_i32();
 	    tcg_gen_add_i32(addr, REG(B7_4), REG(0));
 	    if (ctx->fpscr & FPSCR_SZ) {
-		int fr = XREG(B11_8);
+		int fr = XREG(B11_8) | (ctx->fpscr & FPSCR_PR ? 1:0);
 		tcg_gen_qemu_ld32u(cpu_fregs[fr	 ], addr, ctx->memidx);
 		tcg_gen_addi_i32(addr, addr, 4);
-		tcg_gen_qemu_ld32u(cpu_fregs[fr+1], addr, ctx->memidx);
+		tcg_gen_qemu_ld32u(cpu_fregs[fr^1], addr, ctx->memidx);
 	    } else {
 		tcg_gen_qemu_ld32u(cpu_fregs[FREG(B11_8)], addr, ctx->memidx);
 	    }
@@ -1128,10 +1128,10 @@ static void decode_opc(DisasContext * ctx)
 	    TCGv addr = tcg_temp_new();
 	    tcg_gen_add_i32(addr, REG(B11_8), REG(0));
 	    if (ctx->fpscr & FPSCR_SZ) {
-		int fr = XREG(B7_4);
+		int fr = XREG(B7_4) | (ctx->fpscr & FPSCR_PR ? 1:0);
 		tcg_gen_qemu_ld32u(cpu_fregs[fr	 ], addr, ctx->memidx);
 		tcg_gen_addi_i32(addr, addr, 4);
-		tcg_gen_qemu_ld32u(cpu_fregs[fr+1], addr, ctx->memidx);
+		tcg_gen_qemu_ld32u(cpu_fregs[fr^1], addr, ctx->memidx);
 	    } else {
 		tcg_gen_qemu_st32(cpu_fregs[FREG(B7_4)], addr, ctx->memidx);
 	    }
