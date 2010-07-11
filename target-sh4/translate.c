@@ -1630,12 +1630,16 @@ static void decode_opc(DisasContext * ctx)
         */
         if (ctx->features & SH_FEATURE_SH4A) {
 	    int label = gen_new_label();
+gen_helper_lock();
+gen_helper_get_ldst(cpu_ldst);
 	    gen_clr_t();
 	    tcg_gen_or_i32(cpu_sr, cpu_sr, cpu_ldst);
 	    tcg_gen_brcondi_i32(TCG_COND_EQ, cpu_ldst, 0, label);
 	    tcg_gen_qemu_st32(REG(0), REG(B11_8), ctx->memidx);
 	    gen_set_label(label);
 	    tcg_gen_movi_i32(cpu_ldst, 0);
+gen_helper_clr_ldst();
+gen_helper_unlock();
 	    return;
 	} else
 	    break;
@@ -1648,6 +1652,7 @@ static void decode_opc(DisasContext * ctx)
         */
 	if (ctx->features & SH_FEATURE_SH4A) {
 	    tcg_gen_movi_i32(cpu_ldst, 0);
+gen_helper_set_ldst();
 	    tcg_gen_qemu_ld32s(REG(0), REG(B11_8), ctx->memidx);
 	    tcg_gen_movi_i32(cpu_ldst, 1);
 	    return;

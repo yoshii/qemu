@@ -1,5 +1,12 @@
 #include "def-helper.h"
 
+DEF_HELPER_0(get_ldst, i32)
+DEF_HELPER_0(set_ldst, void)
+DEF_HELPER_0(clr_ldst, void)
+
+DEF_HELPER_0(lock, void)
+DEF_HELPER_0(unlock, void)
+
 DEF_HELPER_0(ldtlb, void)
 DEF_HELPER_0(raise_illegal_instruction, void)
 DEF_HELPER_0(raise_slot_illegal_instruction, void)

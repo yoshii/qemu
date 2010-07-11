@@ -666,3 +666,34 @@ uint32_t helper_ftrc_DT(uint64_t t0)
     d.ll = t0;
     return float64_to_int32_round_to_zero(d.d, &env->fp_status);
 }
+
+static pthread_t global_cpu_tid = 0;
+static spinlock_t global_cpu_lock = SPIN_LOCK_UNLOCKED;
+
+void helper_lock(void)
+{
+    spin_lock(&global_cpu_lock);
+}
+
+void helper_unlock(void)
+{
+    spin_unlock(&global_cpu_lock);
+}
+
+uint32_t helper_get_ldst(void)
+{
+printf("(GET:%ld)\n",(unsigned long)global_cpu_tid);
+    return pthread_equal(pthread_self(), global_cpu_tid);
+}
+
+void helper_set_ldst(void)
+{
+global_cpu_tid = pthread_self();
+printf("(SET)\n");
+}
+
+void helper_clr_ldst(void)
+{
+global_cpu_tid = 0;
+printf("(CLR)\n");
+}
